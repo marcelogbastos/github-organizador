@@ -36,7 +36,7 @@ def request(url, token=None, accept='application/vnd.github+json'):
                 time.sleep(2 ** attempt)
                 continue
             if exc.code in (403, 429):
-                raise RuntimeError('Limite ou restrição da API. Use GITHUB_TOKEN (ou --gh) e tente novamente. '
+                raise RuntimeError('Limite ou restrição da API. Use GITHUB_TOKEN ou "gh auth login" e tente novamente. '
                                    'Nenhuma exportação parcial foi gravada.') from None
             raise RuntimeError(f'GitHub retornou HTTP {exc.code}. Confira usuário e token.') from None
         except (urllib.error.URLError, TimeoutError):
@@ -115,18 +115,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--user', default='marcelogbastos')
     parser.add_argument('--output', type=Path, default=ROOT / 'saida', help='Pasta de saída (padrão: saida/)')
-    parser.add_argument('--gh', action='store_true', help='Usa o token do GitHub CLI (gh auth token) se GITHUB_TOKEN não existir')
+    parser.add_argument('--public-only', action='store_true', help='Não usa token: coleta apenas repositórios públicos')
     parser.add_argument('--no-languages', action='store_true', help='Não consulta o detalhamento de linguagens por repositório')
     parser.add_argument('--from-json', type=Path, help='Regenera o HTML a partir de um dados.json, sem acessar a API')
     args = parser.parse_args()
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]{0,38}', args.user):
         parser.error('Usuário inválido')
-    token = os.environ.get('GITHUB_TOKEN')
-    if not token and args.gh and not args.from_json:
-        try:
+    token = None if args.public_only else os.environ.get('GITHUB_TOKEN')
+    if not token and not args.public_only and not args.from_json:
+        try:  # sem GITHUB_TOKEN, tenta o token do GitHub CLI para incluir repositórios privados
             token = subprocess.run(['gh', 'auth', 'token'], capture_output=True, text=True, check=True).stdout.strip() or None
         except (OSError, subprocess.CalledProcessError):
-            parser.error('Não foi possível obter o token do GitHub CLI')
+            pass
+    if not args.from_json:
+        print('Token encontrado: incluindo repositórios privados.' if token else
+              'AVISO: sem token (defina GITHUB_TOKEN ou faça "gh auth login"). Só repositórios públicos serão coletados.')
     try:
         if args.from_json:
             payload = json.loads(args.from_json.read_text(encoding='utf-8'))

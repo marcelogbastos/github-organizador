@@ -16,7 +16,7 @@ saida/dados/dados.json      dados coletados (gerado)
 ## Executar
 
 ```powershell
-python src/github-dashboard.py --gh      # usa o token do GitHub CLI (inclui repositórios privados)
+python src/github-dashboard.py      # usa GITHUB_TOKEN ou o token do GitHub CLI (inclui privados)
 Start-Process .\saida\dashboard.html
 ```
 
@@ -25,12 +25,12 @@ Opções:
 | Opção | O que faz |
 |---|---|
 | `--user NOME` | Outro usuário (padrão: marcelogbastos) |
-| `--gh` | Usa `gh auth token` se `GITHUB_TOKEN` não estiver definido |
+| `--public-only` | Ignora tokens e coleta só repositórios públicos |
 | `--no-languages` | Pula o detalhamento de linguagens por repositório (menos chamadas à API) |
 | `--from-json saida/dados/dados.json` | Regenera o HTML sem acessar a API (útil ao editar o template) |
 | `--output PASTA` | Pasta de saída |
 
-Sem token, só repositórios públicos são coletados. O token é lido apenas pelo Python e nunca é gravado no HTML ou no JSON. Os dados só são gravados depois de a coleta terminar.
+O token vem de `GITHUB_TOKEN` ou, se ausente, do GitHub CLI (`gh auth login`); sem nenhum dos dois, só repositórios públicos são coletados e o script avisa. O token é lido apenas pelo Python e nunca é gravado no HTML ou no JSON. Os dados só são gravados depois de a coleta terminar.
 
 ## O que o dashboard oferece
 
